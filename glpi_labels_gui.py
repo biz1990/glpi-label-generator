@@ -551,7 +551,7 @@ class App(ctk.CTk):
         self._update_config_status()
         self.lbl_filters_title.configure(text=f"  {self.t('filters')}")
         self.lbl_type.configure(text=self.t("type_label"))
-        self.combo_type.configure(values=[self.t("type_all"), "Computer", "Monitor"])
+        self.combo_type.configure(values=[self.t("type_all"), "Computer", "Monitor","Printer","Scanner"])
         self.combo_type.set(self.t("type_all"))
         self.lbl_ids.configure(text=self.t("ids_label"))
         self.lbl_lieu.configure(text=self.t("location_label"))
