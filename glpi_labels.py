@@ -60,6 +60,8 @@ GAP_Y = 4 * mm
 ASSET_TYPES = {
     "Computer": {"label": "Ordinateur", "form": "front/computer.form.php"},
     "Monitor":  {"label": "Ecran",      "form": "front/monitor.form.php"},
+    "Printer":  {"label": "Printer",    "form": "front/printer.form.php"},
+    "Scanner":  {"label": "Scanner",    "form": "front/scanner.form.php"},
 }
 
 # === API ===
