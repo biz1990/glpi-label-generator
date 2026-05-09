@@ -48,6 +48,8 @@ GAP_Y = 4 * mm
 ASSET_TYPES = {
     "Computer": {"form": "front/computer.form.php"},
     "Monitor":  {"form": "front/monitor.form.php"},
+    "Printer":  {"form": "front/printer.form.php"},
+    "Scanner":  {"form": "front/scanner.form.php"},
 }
 
 # === TRANSLATIONS ===
@@ -502,7 +504,7 @@ class App(ctk.CTk):
 
         self.lbl_type = ctk.CTkLabel(fgrid, text=self.t("type_label"))
         self.lbl_type.grid(row=0, column=0, sticky="w", pady=3)
-        self.combo_type = ctk.CTkComboBox(fgrid, values=[self.t("type_all"), "Computer", "Monitor"],
+        self.combo_type = ctk.CTkComboBox(fgrid, values=[self.t("type_all"), "Computer", "Monitor","Printer","Scanner"],
                                           state="readonly", width=150)
         self.combo_type.set(self.t("type_all"))
         self.combo_type.grid(row=0, column=1, sticky="w", padx=(10, 20), pady=3)
