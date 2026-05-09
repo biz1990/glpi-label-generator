@@ -37,6 +37,7 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "glpi_config.json")
 
 # === LABEL LAYOUTS PER TAPE SIZE ===
 TAPE_SIZES = {
+    "28x25mm": {"label_w": 26, "label_h": 23.5, "qr_size": 18, "font_name": 7, "font_type": 5, "font_sn": 5.5, "font_inv": 5,"logo_h": 4},
     "36mm": {"label_w": 80, "label_h": 36, "qr_size": 26, "font_name": 9, "font_type": 5.5, "font_sn": 6.5, "font_loc": 6, "font_inv": 5.5, "logo_h": 12},
     "25mm": {"label_w": 70, "label_h": 25, "qr_size": 18, "font_name": 7.5, "font_type": 5, "font_sn": 5.5, "font_loc": 5, "font_inv": 4.5, "logo_h": 8},
     "50mm": {"label_w": 90, "label_h": 50, "qr_size": 36, "font_name": 11, "font_type": 7, "font_sn": 8, "font_loc": 7, "font_inv": 6.5, "logo_h": 16},
@@ -220,155 +221,190 @@ def make_qr(url, inverse=False):
     return ImageReader(buf)
 
 # === DRAW LABEL ===
-def draw_label(c, x, y, a, logo_path, tape="36mm", color_mode="bw", owner="", show_date=True):
-    ts = TAPE_SIZES.get(tape, TAPE_SIZES["36mm"])
+# def draw_label(c, x, y, a, logo_path, tape="36mm", color_mode="bw", owner="", show_date=True):
+#     ts = TAPE_SIZES.get(tape, TAPE_SIZES["36mm"])
+#     lw = ts["label_w"] * mm
+#     lh = ts["label_h"] * mm
+#     qs = ts["qr_size"] * mm
+#     inverse = color_mode in ("inverse", "inverse_mono")
+#     is_color = color_mode == "color"
+#     is_mono = color_mode in ("mono", "inverse_mono")  # Pure black & white, no grays
+
+#     # Background fill for inverse mode
+#     if inverse:
+#         c.setFillColor(HexColor("#000000"))
+#         c.rect(x, y, lw, lh, fill=1, stroke=0)
+#         c.setStrokeColor(HexColor("#000000") if is_mono else HexColor("#333333"))
+#     else:
+#         c.setStrokeColor(HexColor("#000000") if is_mono else HexColor("#CCCCCC"))
+#     c.setLineWidth(0.5)
+#     c.rect(x, y, lw, lh)
+
+#     sx = x + 3*mm + qs + 2*mm
+#     c.setStrokeColor(HexColor("#FFFFFF") if (inverse and is_mono) else HexColor("#000000") if is_mono else HexColor("#444444") if inverse else HexColor("#E0E0E0"))
+#     c.setLineWidth(0.3)
+#     c.line(sx, y+3*mm, sx, y+lh-3*mm)
+
+#     c.drawImage(make_qr(a["url"], inverse=inverse), x+3*mm, y+(lh-qs)/2, qs, qs)
+
+#     tx = sx + 3*mm
+
+#     # Colors for text - mono modes use only pure black/white
+#     if is_mono:
+#         main_color = HexColor("#FFFFFF") if inverse else HexColor("#000000")
+#         sub_color = main_color
+#         sn_color = main_color
+#         loc_color = main_color
+#         inv_color = main_color
+#     else:
+#         main_color = HexColor("#FFFFFF") if inverse else HexColor("#000000")
+#         sub_color = HexColor("#CCCCCC") if inverse else (HexColor("#666666") if is_color else HexColor("#000000"))
+#         sn_color = HexColor("#FFFFFF") if inverse else (HexColor("#333333") if is_color else HexColor("#000000"))
+#         loc_color = HexColor("#AAAAAA") if inverse else (HexColor("#1B3A5C") if is_color else HexColor("#000000"))
+#         inv_color = HexColor("#888888") if inverse else (HexColor("#999999") if is_color else HexColor("#555555"))
+
+#     if logo_path and os.path.exists(logo_path):
+#         lgh = ts["logo_h"] * mm
+#         lgw = lgh * 2000/1444
+#         try:
+#             from PIL import Image as PILImage, ImageOps
+#             pil_img = PILImage.open(logo_path)
+#             # Normalize to RGB + separate alpha (handles P, L, LA, CMYK, RGBA, RGB, etc.)
+#             has_alpha = pil_img.mode in ("RGBA", "LA", "PA") or (pil_img.mode == "P" and "transparency" in pil_img.info)
+#             if has_alpha:
+#                 pil_img = pil_img.convert("RGBA")
+#                 alpha = pil_img.split()[3]
+#             else:
+#                 pil_img = pil_img.convert("RGB")
+#                 alpha = None
+#             rgb = pil_img.convert("RGB")
+#             gray = rgb.convert("L")
+
+#             if inverse and is_mono:
+#                 # Inverse mono: everything non-white becomes white, white bg becomes transparent
+#                 # Detect near-white pixels as background (threshold > 240)
+#                 mask = gray.point(lambda p: 0 if p > 240 else 255)  # 0=bg, 255=content
+#                 white = PILImage.new("L", gray.size, 255)
+#                 if alpha:
+#                     final_alpha = PILImage.composite(mask, PILImage.new("L", mask.size, 0), alpha)
+#                 else:
+#                     final_alpha = mask
+#                 pil_img = PILImage.merge("RGBA", (white, white, white, final_alpha))
+#             elif inverse:
+#                 # Inverse: everything non-white becomes white, white bg becomes transparent
+#                 mask = gray.point(lambda p: 0 if p > 240 else 255)
+#                 white = PILImage.new("L", gray.size, 255)
+#                 if alpha:
+#                     final_alpha = PILImage.composite(mask, PILImage.new("L", mask.size, 0), alpha)
+#                 else:
+#                     final_alpha = mask
+#                 pil_img = PILImage.merge("RGBA", (white, white, white, final_alpha))
+#             elif is_mono:
+#                 # Mono: everything non-white becomes black, white bg stays white
+#                 bw = gray.point(lambda p: 255 if p > 240 else 0)
+#                 a_ch = alpha if alpha else PILImage.new("L", bw.size, 255)
+#                 pil_img = PILImage.merge("RGBA", (bw, bw, bw, a_ch))
+#             elif not is_color:
+#                 # B&W: grayscale, preserve transparency
+#                 a_ch = alpha if alpha else PILImage.new("L", gray.size, 255)
+#                 pil_img = PILImage.merge("RGBA", (gray, gray, gray, a_ch))
+#             else:
+#                 # Color: just ensure RGBA for mask="auto"
+#                 a_ch = alpha if alpha else PILImage.new("L", rgb.size, 255)
+#                 r, g, b = rgb.split()
+#                 pil_img = PILImage.merge("RGBA", (r, g, b, a_ch))
+#             buf_logo = io.BytesIO()
+#             pil_img.save(buf_logo, format="PNG")
+#             buf_logo.seek(0)
+#             logo_img = ImageReader(buf_logo)
+#             c.drawImage(logo_img, x+lw-lgw-2*mm, y+lh-lgh-1*mm, lgw, lgh,
+#                         preserveAspectRatio=True, mask="auto")
+#         except Exception:
+#             pass  # Skip logo if unreadable
+
+#     # Name
+#     c.setFont("Helvetica-Bold", ts["font_name"])
+#     c.setFillColor(main_color)
+#     max_chars = int(ts["label_w"] * 0.22)
+#     nm = a["name"][:max_chars]+"..." if len(a["name"]) > max_chars+1 else a["name"]
+#     c.drawString(tx, y+lh-10*mm, nm)
+
+#     # Type
+#     c.setFont("Helvetica", ts["font_type"])
+#     c.setFillColor(sub_color)
+#     c.drawString(tx, y+lh-14*mm, a["type_label"])
+
+#     # Serial
+#     c.setFont("Helvetica-Bold", ts["font_sn"])
+#     c.setFillColor(sn_color)
+#     sn = a.get("serial", "N/A") or "N/A"
+#     c.drawString(tx, y+lh-19.5*mm, f"S/N: {sn[:20]}")
+
+#     # Date inventaire
+#     date_inv = a.get("date_inv", "") or ""
+#     if date_inv and tape != "25mm" and show_date:
+#         c.setFont("Helvetica", ts["font_loc"])
+#         c.setFillColor(sub_color)
+#         c.drawString(tx, y+lh-24*mm, f"Inv: {date_inv}")
+
+#     # Location
+#     loc = a.get("location", "") or ""
+#     if loc:
+#         loc_y = y+lh-28*mm if (date_inv and tape != "25mm" and show_date) else y+lh-24*mm
+#         c.setFont("Helvetica-Oblique" if not is_color else "Helvetica", ts["font_loc"])
+#         c.setFillColor(loc_color)
+#         c.drawString(tx, loc_y, loc[:20])
+
+#     # Bottom line: owner and/or inventory number
+#     bottom_y = y + 3*mm
+#     if owner:
+#         c.setFont("Helvetica-Bold", ts["font_inv"])
+#         c.setFillColor(main_color)
+#         c.drawString(tx, bottom_y, owner)
+
+#     inv = a.get("otherserial", "") or ""
+#     if inv and tape != "25mm":
+#         c.setFont("Helvetica", ts["font_inv"])
+#         c.setFillColor(inv_color)
+#         inv_x = tx if not owner else x + lw - 3*mm - c.stringWidth(f"Inv: {inv}", "Helvetica", ts["font_inv"])
+#         c.drawString(inv_x, bottom_y, f"Inv: {inv}")
+
+#     c.setFillColor(HexColor("#000000"))
+
+def draw_label(c, x, y, a, logo_path, tape="28x25mm", color_mode="bw", owner="", show_date=True):
+    ts = TAPE_SIZES.get(tape, TAPE_SIZES["28x25mm"])
     lw = ts["label_w"] * mm
     lh = ts["label_h"] * mm
     qs = ts["qr_size"] * mm
+
     inverse = color_mode in ("inverse", "inverse_mono")
-    is_color = color_mode == "color"
-    is_mono = color_mode in ("mono", "inverse_mono")  # Pure black & white, no grays
 
-    # Background fill for inverse mode
-    if inverse:
-        c.setFillColor(HexColor("#000000"))
-        c.rect(x, y, lw, lh, fill=1, stroke=0)
-        c.setStrokeColor(HexColor("#000000") if is_mono else HexColor("#333333"))
-    else:
-        c.setStrokeColor(HexColor("#000000") if is_mono else HexColor("#CCCCCC"))
-    c.setLineWidth(0.5)
-    c.rect(x, y, lw, lh)
+    # Nền + viền
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setStrokeColor(HexColor("#000000"))
+    c.setLineWidth(0.25)
+    c.rect(x, y, lw, lh, fill=1, stroke=1)
 
-    sx = x + 3*mm + qs + 2*mm
-    c.setStrokeColor(HexColor("#FFFFFF") if (inverse and is_mono) else HexColor("#000000") if is_mono else HexColor("#444444") if inverse else HexColor("#E0E0E0"))
-    c.setLineWidth(0.3)
-    c.line(sx, y+3*mm, sx, y+lh-3*mm)
+    # === QR CODE Ở TRÊN ===
+    qr_y = y + lh - qs - 1*mm
+    c.drawImage(make_qr(a["url"], inverse=inverse), 
+                x + (lw - qs)/2, qr_y, qs, qs)
 
-    c.drawImage(make_qr(a["url"], inverse=inverse), x+3*mm, y+(lh-qs)/2, qs, qs)
-
-    tx = sx + 3*mm
-
-    # Colors for text - mono modes use only pure black/white
-    if is_mono:
-        main_color = HexColor("#FFFFFF") if inverse else HexColor("#000000")
-        sub_color = main_color
-        sn_color = main_color
-        loc_color = main_color
-        inv_color = main_color
-    else:
-        main_color = HexColor("#FFFFFF") if inverse else HexColor("#000000")
-        sub_color = HexColor("#CCCCCC") if inverse else (HexColor("#666666") if is_color else HexColor("#000000"))
-        sn_color = HexColor("#FFFFFF") if inverse else (HexColor("#333333") if is_color else HexColor("#000000"))
-        loc_color = HexColor("#AAAAAA") if inverse else (HexColor("#1B3A5C") if is_color else HexColor("#000000"))
-        inv_color = HexColor("#888888") if inverse else (HexColor("#999999") if is_color else HexColor("#555555"))
-
-    if logo_path and os.path.exists(logo_path):
-        lgh = ts["logo_h"] * mm
-        lgw = lgh * 2000/1444
-        try:
-            from PIL import Image as PILImage, ImageOps
-            pil_img = PILImage.open(logo_path)
-            # Normalize to RGB + separate alpha (handles P, L, LA, CMYK, RGBA, RGB, etc.)
-            has_alpha = pil_img.mode in ("RGBA", "LA", "PA") or (pil_img.mode == "P" and "transparency" in pil_img.info)
-            if has_alpha:
-                pil_img = pil_img.convert("RGBA")
-                alpha = pil_img.split()[3]
-            else:
-                pil_img = pil_img.convert("RGB")
-                alpha = None
-            rgb = pil_img.convert("RGB")
-            gray = rgb.convert("L")
-
-            if inverse and is_mono:
-                # Inverse mono: everything non-white becomes white, white bg becomes transparent
-                # Detect near-white pixels as background (threshold > 240)
-                mask = gray.point(lambda p: 0 if p > 240 else 255)  # 0=bg, 255=content
-                white = PILImage.new("L", gray.size, 255)
-                if alpha:
-                    final_alpha = PILImage.composite(mask, PILImage.new("L", mask.size, 0), alpha)
-                else:
-                    final_alpha = mask
-                pil_img = PILImage.merge("RGBA", (white, white, white, final_alpha))
-            elif inverse:
-                # Inverse: everything non-white becomes white, white bg becomes transparent
-                mask = gray.point(lambda p: 0 if p > 240 else 255)
-                white = PILImage.new("L", gray.size, 255)
-                if alpha:
-                    final_alpha = PILImage.composite(mask, PILImage.new("L", mask.size, 0), alpha)
-                else:
-                    final_alpha = mask
-                pil_img = PILImage.merge("RGBA", (white, white, white, final_alpha))
-            elif is_mono:
-                # Mono: everything non-white becomes black, white bg stays white
-                bw = gray.point(lambda p: 255 if p > 240 else 0)
-                a_ch = alpha if alpha else PILImage.new("L", bw.size, 255)
-                pil_img = PILImage.merge("RGBA", (bw, bw, bw, a_ch))
-            elif not is_color:
-                # B&W: grayscale, preserve transparency
-                a_ch = alpha if alpha else PILImage.new("L", gray.size, 255)
-                pil_img = PILImage.merge("RGBA", (gray, gray, gray, a_ch))
-            else:
-                # Color: just ensure RGBA for mask="auto"
-                a_ch = alpha if alpha else PILImage.new("L", rgb.size, 255)
-                r, g, b = rgb.split()
-                pil_img = PILImage.merge("RGBA", (r, g, b, a_ch))
-            buf_logo = io.BytesIO()
-            pil_img.save(buf_logo, format="PNG")
-            buf_logo.seek(0)
-            logo_img = ImageReader(buf_logo)
-            c.drawImage(logo_img, x+lw-lgw-2*mm, y+lh-lgh-1*mm, lgw, lgh,
-                        preserveAspectRatio=True, mask="auto")
-        except Exception:
-            pass  # Skip logo if unreadable
-
-    # Name
+    # === TÊN THIẾT BỊ Ở DƯỚI ===
     c.setFont("Helvetica-Bold", ts["font_name"])
-    c.setFillColor(main_color)
-    max_chars = int(ts["label_w"] * 0.22)
-    nm = a["name"][:max_chars]+"..." if len(a["name"]) > max_chars+1 else a["name"]
-    c.drawString(tx, y+lh-10*mm, nm)
-
-    # Type
-    c.setFont("Helvetica", ts["font_type"])
-    c.setFillColor(sub_color)
-    c.drawString(tx, y+lh-14*mm, a["type_label"])
-
-    # Serial
-    c.setFont("Helvetica-Bold", ts["font_sn"])
-    c.setFillColor(sn_color)
-    sn = a.get("serial", "N/A") or "N/A"
-    c.drawString(tx, y+lh-19.5*mm, f"S/N: {sn[:20]}")
-
-    # Date inventaire
-    date_inv = a.get("date_inv", "") or ""
-    if date_inv and tape != "25mm" and show_date:
-        c.setFont("Helvetica", ts["font_loc"])
-        c.setFillColor(sub_color)
-        c.drawString(tx, y+lh-24*mm, f"Inv: {date_inv}")
-
-    # Location
-    loc = a.get("location", "") or ""
-    if loc:
-        loc_y = y+lh-28*mm if (date_inv and tape != "25mm" and show_date) else y+lh-24*mm
-        c.setFont("Helvetica-Oblique" if not is_color else "Helvetica", ts["font_loc"])
-        c.setFillColor(loc_color)
-        c.drawString(tx, loc_y, loc[:20])
-
-    # Bottom line: owner and/or inventory number
-    bottom_y = y + 3*mm
-    if owner:
-        c.setFont("Helvetica-Bold", ts["font_inv"])
-        c.setFillColor(main_color)
-        c.drawString(tx, bottom_y, owner)
-
-    inv = a.get("otherserial", "") or ""
-    if inv and tape != "25mm":
-        c.setFont("Helvetica", ts["font_inv"])
-        c.setFillColor(inv_color)
-        inv_x = tx if not owner else x + lw - 3*mm - c.stringWidth(f"Inv: {inv}", "Helvetica", ts["font_inv"])
-        c.drawString(inv_x, bottom_y, f"Inv: {inv}")
-
     c.setFillColor(HexColor("#000000"))
+    
+    name = a["name"].strip()
+    if len(name) > 24:
+        name = name[:23] + "..."
+
+    # Căn giữa tên
+    font_size = ts["font_name"]
+    text_width = c.stringWidth(name, "Helvetica-Bold", font_size)
+    tx = x + (lw - text_width) / 2
+    ty = qr_y - 2*mm   # Tăng khoảng cách để tránh chồng biên
+
+    c.drawString(tx, ty, name)
 
 # === GENERATE PDF ===
 def make_pdf(assets, path, logo_path, tape="36mm", color_mode="bw", owner="", show_date=True):
